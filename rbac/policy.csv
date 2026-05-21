@@ -1,0 +1,21 @@
+# Role definitions
+p, role:readonly,  applications, get,    */*, allow
+p, role:readonly,  applications, list,   */*, allow
+p, role:readonly,  repositories, get,    *, allow
+
+p, role:developer, applications, get,    services/*, allow
+p, role:developer, applications, sync,   services/*, allow
+p, role:developer, applications, action, services/*, allow
+
+p, role:lead,      applications, *,      services/*, allow
+p, role:lead,      repositories, get,    *, allow
+
+p, role:platform,  *,            *,      */*, allow
+
+# Group bindings
+g, PLACEHOLDER_DEV_GROUP,      role:developer
+g, PLACEHOLDER_LEAD_GROUP,     role:lead
+g, PLACEHOLDER_PLATFORM_GROUP, role:platform
+
+# Allow all authenticated users read access
+g, *, role:readonly

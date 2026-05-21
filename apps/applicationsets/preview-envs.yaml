@@ -1,0 +1,47 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: preview-envs
+  namespace: argocd
+spec:
+  goTemplate: true
+  generators:
+    - pullRequest:
+        github:
+          owner: gerardrecinto
+          repo: PLACEHOLDER_APP_REPO
+          tokenRef:
+            secretName: github-token
+            key: token
+        requeueAfterSeconds: 60
+  template:
+    metadata:
+      name: 'preview-{{.branch}}-{{.number}}'
+      labels:
+        preview: "true"
+        pr: '{{.number}}'
+    spec:
+      project: services
+      source:
+        repoURL: https://github.com/gerardrecinto/PLACEHOLDER_APP_REPO
+        targetRevision: '{{.head_sha}}'
+        path: charts/app
+        helm:
+          valueFiles:
+            - values.yaml
+          parameters:
+            - name: image.tag
+              value: 'pr-{{.number}}'
+            - name: ingress.host
+              value: 'preview-{{.number}}.PLACEHOLDER_DOMAIN'
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: 'preview-{{.number}}'
+      syncPolicy:
+        syncOptions:
+          - CreateNamespace=true
+  templatePatch: |
+    metadata:
+      annotations:
+        notifications.argoproj.io/subscribe.on-sync-succeeded.github: ""
+        notifications.argoproj.io/subscribe.on-sync-failed.github: ""

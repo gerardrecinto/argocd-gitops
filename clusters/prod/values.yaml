@@ -1,0 +1,19 @@
+# Production cluster overrides
+
+cluster:
+  name: prod
+  env: production
+  server: PLACEHOLDER_PROD_CLUSTER_API
+
+ingress:
+  domain: PLACEHOLDER_PROD_DOMAIN
+  ip: PLACEHOLDER_PROD_INGRESS_IP
+
+monitoring:
+  retention: 30d
+  storage: 100Gi
+
+replicas:
+  default: 3
+  min: 2
+  max: 10

@@ -1,0 +1,35 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: services
+  namespace: argocd
+spec:
+  description: Application services — namespace-scoped, per-team access
+  sourceRepos:
+    - https://github.com/gerardrecinto/argocd-gitops
+    - https://github.com/gerardrecinto/PLACEHOLDER_APP_REPO
+  destinations:
+    - server: "*"
+      namespace: api-gateway
+    - server: "*"
+      namespace: user-service
+    - server: "*"
+      namespace: worker-service
+    - server: "*"
+      namespace: preview-*
+  clusterResourceWhitelist: []
+  namespaceResourceWhitelist:
+    - group: "*"
+      kind: "*"
+  roles:
+    - name: developer
+      policies:
+        - p, proj:services:developer, applications, get,  services/*, allow
+        - p, proj:services:developer, applications, sync, services/*, allow
+      groups:
+        - PLACEHOLDER_DEV_GROUP
+    - name: lead
+      policies:
+        - p, proj:services:lead, applications, *, services/*, allow
+      groups:
+        - PLACEHOLDER_LEAD_GROUP

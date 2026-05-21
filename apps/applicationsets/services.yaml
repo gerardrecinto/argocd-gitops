@@ -1,0 +1,43 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: services
+  namespace: argocd
+spec:
+  goTemplate: true
+  generators:
+    - git:
+        repoURL: https://github.com/gerardrecinto/argocd-gitops
+        revision: HEAD
+        directories:
+          - path: charts/services/*
+  template:
+    metadata:
+      name: '{{.path.basename}}'
+    spec:
+      project: services
+      source:
+        repoURL: https://github.com/gerardrecinto/argocd-gitops
+        targetRevision: HEAD
+        path: '{{.path.path}}'
+        helm:
+          valueFiles:
+            - values.yaml
+            - 'values-{{.metadata.labels.env}}.yaml'
+      destination:
+        server: '{{.metadata.annotations.argocd.argoproj.io/dest-server}}'
+        namespace: '{{.path.basename}}'
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true
+          - PrunePropagationPolicy=foreground
+          - RespectIgnoreDifferences=true
+        retry:
+          limit: 3
+          backoff:
+            duration: 10s
+            factor: 2
+            maxDuration: 3m
