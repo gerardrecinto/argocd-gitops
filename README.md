@@ -1,5 +1,13 @@
 # argocd-gitops
 
+![ArgoCD](https://img.shields.io/badge/ArgoCD-2.x-EF7B4D?logo=argo&logoColor=white)
+![Kubernetes](https://img.shields.io/badge/Kubernetes-1.28%2B-326CE5?logo=kubernetes&logoColor=white)
+![Helm](https://img.shields.io/badge/Helm-3.x-0F1689?logo=helm&logoColor=white)
+![GitHub Actions](https://img.shields.io/badge/GitHub%20Actions-CI-2088FF?logo=githubactions&logoColor=white)
+![License: MIT](https://img.shields.io/badge/License-MIT-22c55e)
+
+![Demo](docs/assets/demo.gif)
+
 ArgoCD GitOps patterns for multi-cluster Kubernetes. Covers the App-of-Apps bootstrap pattern, ApplicationSets for dynamic application generation, sync policies with automated pruning and self-healing, AppProject RBAC, and environment-specific value overlays.
 
 > All cluster names, namespaces, registry URLs, and hostnames use `PLACEHOLDER_*` values. The patterns and sync configurations reflect production GitOps workflows used to manage 20+ services across staging and prod clusters.
