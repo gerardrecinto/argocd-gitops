@@ -14,7 +14,7 @@ ArgoCD GitOps patterns for multi-cluster Kubernetes. Covers the App-of-Apps boot
 
 Commercial angle and consulting hooks: [docs/go-to-market.md](docs/go-to-market.md).
 
-> All cluster names, namespaces, registry URLs, and hostnames use `PLACEHOLDER_*` values. The patterns and sync configurations reflect production GitOps workflows used to manage 20+ services across staging and prod clusters.
+> All cluster names, namespaces, registry URLs, and hostnames use `PLACEHOLDER_*` values. These are reference patterns, not a live cluster's actual config. Swap the placeholders for your own before applying anything here.
 
 ---
 
@@ -24,9 +24,9 @@ Commercial angle and consulting hooks: [docs/go-to-market.md](docs/go-to-market.
 apps/
 ├── root-app.yaml              App-of-Apps: watches apps/infra/ and apps/services/
 ├── applicationsets/
-│   ├── cluster-addons.yaml    Cluster generator — deploy infra addons to every registered cluster
-│   ├── services.yaml          Git directory generator — one Application per service directory
-│   └── preview-envs.yaml      Pull request generator — ephemeral preview envs per open PR
+│   ├── cluster-addons.yaml    Cluster generator: deploy infra addons to every registered cluster
+│   ├── services.yaml          Git directory generator: one Application per service directory
+│   └── preview-envs.yaml      Pull request generator: ephemeral preview envs per open PR
 ├── infra/
 │   ├── cert-manager.yaml
 │   ├── ingress-nginx.yaml
@@ -36,17 +36,17 @@ apps/
     └── api-gateway.yaml        Standalone Application, onboarded before the ApplicationSet existed
 
 projects/
-├── infra.yaml                 AppProject — cluster-scoped addons, restricted source repos
-└── services.yaml              AppProject — application services, namespace-scoped
+├── infra.yaml                 AppProject: cluster-scoped addons, restricted source repos
+└── services.yaml              AppProject: application services, namespace-scoped
 
 rbac/
-└── policy.csv                 ArgoCD RBAC — get/list for everyone, sync for devs on services/*, full control for leads on services/*, admin for platform
+└── policy.csv                 ArgoCD RBAC: get/list for everyone, sync for devs on services/*, full control for leads on services/*, admin for platform
 
 clusters/
 ├── prod/
-│   └── values.yaml
-└── staging/
-    └── values.yaml
+│   └── values.yaml         Per-cluster overrides (domain, ingress IP, replica bounds), reference
+└── staging/                 values for teams wiring their own service charts, not consumed by
+    └── values.yaml          any Application in this repo yet.
 ```
 
 ---
@@ -70,25 +70,25 @@ argocd app create root \
 
 ---
 
-### ApplicationSet — Cluster Addons
+### ApplicationSet: Cluster Addons
 
 Deploys cert-manager, ingress-nginx, MetalLB, and monitoring to every cluster registered in ArgoCD. Adding a cluster automatically provisions all addons without any manual Application creation.
 
 See [apps/applicationsets/cluster-addons.yaml](apps/applicationsets/cluster-addons.yaml).
 
-`apps/infra/monitoring.yaml` points Grafana's admin credentials at a `grafana-admin-credentials` secret (`admin.existingSecret`) instead of a plaintext value. That secret is provisioned per-cluster out of band — through the platform team's secrets manager, not committed to this repo — before the monitoring Application syncs.
+`apps/infra/monitoring.yaml` points Grafana's admin credentials at a `grafana-admin-credentials` secret (`admin.existingSecret`) instead of a plaintext value. That secret is provisioned per-cluster out of band, through the platform team's secrets manager, and never committed to this repo. It needs to exist before the monitoring Application syncs.
 
 ---
 
-### ApplicationSet — Services (Git Directory Generator)
+### ApplicationSet: Services (Git Directory Generator)
 
-Scans `charts/services/` and creates one Application per subdirectory. New services are deployed by adding a Helm chart directory — no ArgoCD manifest to write. `charts/services/` doesn't exist yet in this repo; `apps/services/api-gateway.yaml` predates the ApplicationSet and is still managed as a standalone Application.
+Scans `charts/services/` and creates one Application per subdirectory. New services are deployed by adding a Helm chart directory: no ArgoCD manifest to write. `charts/services/` doesn't exist yet in this repo; `apps/services/api-gateway.yaml` predates the ApplicationSet and is still managed as a standalone Application.
 
 See [apps/applicationsets/services.yaml](apps/applicationsets/services.yaml).
 
 ---
 
-### ApplicationSet — Preview Environments
+### ApplicationSet: Preview Environments
 
 Uses the pull request generator to create a temporary namespace and Application for every open PR targeting `main`. The preview env is garbage-collected when the PR closes.
 
@@ -123,9 +123,9 @@ Staging uses the same policy. Preview envs use manual sync to avoid accidental r
 
 ### AppProjects
 
-`projects/infra.yaml` — cluster-admin scope, locked to the platform team's repo, only deploys to `kube-system` and addon namespaces.
+`projects/infra.yaml`: cluster-admin scope, locked to the platform team's repo, only deploys to `kube-system` and addon namespaces.
 
-`projects/services.yaml` — namespace-scoped, locked to the application services repo, teams can only deploy to their own namespaces.
+`projects/services.yaml`: namespace-scoped, locked to the application services repo, teams can only deploy to their own namespaces.
 
 See [projects/](projects/).
 
@@ -135,9 +135,9 @@ See [projects/](projects/).
 
 Four roles, scoped by both action and project so no role gets a blanket `*/*` grant except `platform`, which is the intentional break-glass/admin tier:
 
-- `readonly` — every authenticated user, `get`/`list` on applications across all projects, `get` on repositories. No write actions anywhere.
-- `developer` — `get`/`sync`/`action` on `services/*` only. Cannot touch `infra/*`.
-- `lead` — full application actions on `services/*` only, plus `repositories, get`. Still can't touch `infra/*`.
-- `platform` — unrestricted. The platform team owns cluster-scoped infra and needs it.
+- `readonly`: every authenticated user, `get`/`list` on applications across all projects, `get` on repositories. No write actions anywhere.
+- `developer`: `get`/`sync`/`action` on `services/*` only. Cannot touch `infra/*`.
+- `lead`: full application actions on `services/*` only, plus `repositories, get`. Still can't touch `infra/*`.
+- `platform`: unrestricted. The platform team owns cluster-scoped infra and needs it.
 
-See [rbac/policy.csv](rbac/policy.csv) for the exact policy — it's the source of truth, this section just summarizes the intent.
+See [rbac/policy.csv](rbac/policy.csv) for the exact policy: it's the source of truth, this section just summarizes the intent.

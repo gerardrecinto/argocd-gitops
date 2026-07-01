@@ -4,7 +4,7 @@ metadata:
   name: services
   namespace: argocd
 spec:
-  description: Application services — namespace-scoped, per-team access
+  description: Application services, namespace-scoped, per-team access
   sourceRepos:
     - https://github.com/gerardrecinto/argocd-gitops
     - https://github.com/gerardrecinto/PLACEHOLDER_APP_REPO
