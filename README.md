@@ -33,16 +33,14 @@ apps/
 │   ├── metallb.yaml
 │   └── monitoring.yaml
 └── services/
-    ├── api-gateway.yaml
-    ├── user-service.yaml
-    └── worker-service.yaml
+    └── api-gateway.yaml        Standalone Application, onboarded before the ApplicationSet existed
 
 projects/
 ├── infra.yaml                 AppProject — cluster-scoped addons, restricted source repos
 └── services.yaml              AppProject — application services, namespace-scoped
 
 rbac/
-└── policy.csv                 ArgoCD RBAC — read-only for devs, deploy for leads, admin for platform
+└── policy.csv                 ArgoCD RBAC — get/list for everyone, sync for devs on services/*, full control for leads on services/*, admin for platform
 
 clusters/
 ├── prod/
@@ -78,11 +76,13 @@ Deploys cert-manager, ingress-nginx, MetalLB, and monitoring to every cluster re
 
 See [apps/applicationsets/cluster-addons.yaml](apps/applicationsets/cluster-addons.yaml).
 
+`apps/infra/monitoring.yaml` points Grafana's admin credentials at a `grafana-admin-credentials` secret (`admin.existingSecret`) instead of a plaintext value. That secret is provisioned per-cluster out of band — through the platform team's secrets manager, not committed to this repo — before the monitoring Application syncs.
+
 ---
 
 ### ApplicationSet — Services (Git Directory Generator)
 
-Scans `charts/services/` and creates one Application per subdirectory. New services are deployed by adding a Helm chart directory — no ArgoCD manifest to write.
+Scans `charts/services/` and creates one Application per subdirectory. New services are deployed by adding a Helm chart directory — no ArgoCD manifest to write. `charts/services/` doesn't exist yet in this repo; `apps/services/api-gateway.yaml` predates the ApplicationSet and is still managed as a standalone Application.
 
 See [apps/applicationsets/services.yaml](apps/applicationsets/services.yaml).
 
@@ -133,16 +133,11 @@ See [projects/](projects/).
 
 ### RBAC
 
-```csv
-# rbac/policy.csv
-p, role:readonly,    applications, get,    */*, allow
-p, role:readonly,    applications, list,   */*, allow
-p, role:developer,   applications, sync,   services/*, allow
-p, role:developer,   applications, get,    services/*, allow
-p, role:lead,        applications, *,      services/*, allow
-p, role:platform,    *,            *,      */*, allow
+Four roles, scoped by both action and project so no role gets a blanket `*/*` grant except `platform`, which is the intentional break-glass/admin tier:
 
-g, PLACEHOLDER_DEV_GROUP,      role:developer
-g, PLACEHOLDER_LEAD_GROUP,     role:lead
-g, PLACEHOLDER_PLATFORM_GROUP, role:platform
-```
+- `readonly` — every authenticated user, `get`/`list` on applications across all projects, `get` on repositories. No write actions anywhere.
+- `developer` — `get`/`sync`/`action` on `services/*` only. Cannot touch `infra/*`.
+- `lead` — full application actions on `services/*` only, plus `repositories, get`. Still can't touch `infra/*`.
+- `platform` — unrestricted. The platform team owns cluster-scoped infra and needs it.
+
+See [rbac/policy.csv](rbac/policy.csv) for the exact policy — it's the source of truth, this section just summarizes the intent.
