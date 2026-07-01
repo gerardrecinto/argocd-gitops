@@ -15,7 +15,10 @@ spec:
       values: |
         grafana:
           enabled: true
-          adminPassword: PLACEHOLDER_GRAFANA_PASSWORD
+          admin:
+            existingSecret: grafana-admin-credentials
+            userKey: admin-user
+            passwordKey: admin-password
           ingress:
             enabled: true
             ingressClassName: nginx
