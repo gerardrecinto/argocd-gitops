@@ -141,3 +141,15 @@ Four roles, scoped by both action and project so no role gets a blanket `*/*` gr
 - `platform`: unrestricted. The platform team owns cluster-scoped infra and needs it.
 
 See [rbac/policy.csv](rbac/policy.csv) for the exact policy: it's the source of truth, this section just summarizes the intent.
+
+---
+
+### Local Validation
+
+`.github/workflows/ci.yml` runs yamllint and kubeconform against `apps/` and `projects/` on every push. Run the same checks locally before pushing:
+
+```bash
+./scripts/validate.sh
+```
+
+Requires `yamllint` (`pip install yamllint`) and `kubeconform` on PATH.
