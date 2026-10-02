@@ -1,0 +1,21 @@
+# A release is immutable once an environment points at it. Every service is
+# pinned to an image tag that never moves (sha-<40 hex> or vX.Y.Z), never
+# `latest`. To change what runs, add a new release file, do not edit this one.
+#
+# items-api is the real image from gitops-aks-demo. The platform and frontend
+# entries are EXAMPLES with synthetic tags: replace them with your own images.
+- name: items-api
+  group: backend
+  image: ghcr.io/gerardrecinto/gitops-aks-demo
+  tag: sha-02ceae897379e33cf91f228b8c5878c6fef8b6b0
+  port: 8000
+- name: example-platform-agent
+  group: platform
+  image: ghcr.io/gerardrecinto/example-platform-agent
+  tag: sha-0000000000000000000000000000000000000001
+  port: 8080
+- name: example-web
+  group: frontend
+  image: ghcr.io/gerardrecinto/example-web
+  tag: sha-0000000000000000000000000000000000000001
+  port: 8080

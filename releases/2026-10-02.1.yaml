@@ -1,0 +1,17 @@
+# See 2026-09-30.1.yaml for the rules. This release moves items-api to the
+# build dev already runs and bumps the two example services.
+- name: items-api
+  group: backend
+  image: ghcr.io/gerardrecinto/gitops-aks-demo
+  tag: sha-a5bdf679c23dcd20b5d82c2625e5629fbb177384
+  port: 8000
+- name: example-platform-agent
+  group: platform
+  image: ghcr.io/gerardrecinto/example-platform-agent
+  tag: sha-0000000000000000000000000000000000000002
+  port: 8080
+- name: example-web
+  group: frontend
+  image: ghcr.io/gerardrecinto/example-web
+  tag: sha-0000000000000000000000000000000000000002
+  port: 8080

@@ -1,0 +1,6 @@
+apiVersion: v2
+name: service
+description: One independently deployable service. Image and tag come from releases/*.yaml.
+type: application
+version: 0.1.0
+appVersion: "0"

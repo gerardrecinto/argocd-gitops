@@ -1,0 +1,5 @@
+# What dev runs. Change `release` to promote or roll back dev.
+env: dev
+cluster: dev
+release: 2026-10-02.1
+replicas: 1

@@ -51,6 +51,76 @@ clusters/
 
 ---
 
+## Team deployment model
+
+Three teams (platform, backend, frontend) ship through three environments (dev, stage, prod) from one repo. A release is a pinned list of image tags, and an environment is a pointer to a release.
+
+```
+bootstrap/
+├── project.yaml          AppProject for the root app: may only create AppProjects and ApplicationSets
+└── root.yaml             App of Apps, applied once by hand, watches argocd/
+argocd/
+├── projects/             platform, backend, frontend: approved repo, per-env namespaces, no cluster resources, roles
+└── applicationsets/      dev, stage, prod: one Application per service in the release the env points at
+envs/                     dev.yaml, stage.yaml, prod.yaml: which release each env runs, cluster name, replicas
+releases/                 <id>.yaml: every service with group, image, pinned tag, port
+charts/service/           one hardened Helm chart shared by every service
+scripts/check_refs.py     checks references, immutable tags, and renders the chart per service and env
+```
+
+| Env | Sync | How a change lands |
+| :--- | :--- | :--- |
+| dev | automated, prune, self-heal | merge a change to `envs/dev.yaml` |
+| stage | automated, prune, self-heal | reviewed PR to `envs/stage.yaml` (CODEOWNERS is the gate) |
+| prod | manual | reviewed PR to `envs/prod.yaml`, then a release manager syncs |
+
+Applications are named `<service>-<env>` and live in the project of their `group`, in namespace `<group>-<env>`. Each project has a `deployer` role (sync dev) and a `release-manager` role (sync stage and prod). The `PLACEHOLDER_*` group names are your IdP groups. Register one cluster per env under the names `dev`, `stage`, and `prod`; they can all point at the same cluster while you are testing.
+
+Release rules: tags must be `sha-<40 hex>` or `vX.Y.Z`, never `latest`. A release file is not edited once an env points at it. To change what runs, add a new file and point an env at it. The platform and frontend entries in `releases/` are examples with synthetic tags. `items-api` is the real image from [gitops-aks-demo](https://github.com/gerardrecinto/gitops-aks-demo).
+
+Bootstrap, once per control-plane cluster:
+
+```bash
+argocd cluster add <dev-context>   --name dev
+argocd cluster add <stage-context> --name stage
+argocd cluster add <prod-context>  --name prod
+argocd proj create -f bootstrap/project.yaml
+argocd app create -f bootstrap/root.yaml
+```
+
+Verify:
+
+```bash
+argocd app list -l team=backend
+argocd app get items-api-dev
+argocd app list -l env=prod          # OutOfSync means a promotion is waiting for a release manager
+argocd app diff items-api-prod
+```
+
+Promote a release:
+
+```bash
+# 1. edit `release:` in envs/stage.yaml (or envs/prod.yaml), open a PR, merge it
+# 2. stage deploys on its own. prod waits for a release manager:
+argocd app sync -l env=prod
+```
+
+Roll back:
+
+```bash
+git revert <promotion commit>        # dev and stage follow Git, prod then needs the sync above
+argocd app sync -l env=prod
+# Fastest prod path while Git is being reverted:
+argocd app history items-api-prod
+argocd app rollback items-api-prod <ID>
+```
+
+Add a service by adding an entry to a new release file. Removing one from a release deletes its Application in dev and stage. In prod the workloads are kept (`preserveResourcesOnDeletion`) until someone removes them on purpose.
+
+The existing `apps/` and `projects/` above (cluster add-ons, the standalone `api-gateway`) are untouched and bootstrap separately.
+
+---
+
 ## Patterns
 
 ### App-of-Apps
@@ -152,4 +222,4 @@ See [rbac/policy.csv](rbac/policy.csv) for the exact policy: it's the source of 
 ./scripts/validate.sh
 ```
 
-Requires `yamllint` (`pip install yamllint`) and `kubeconform` on PATH.
+Requires `yamllint` (`pip install yamllint`), `kubeconform`, and PyYAML on PATH. `helm` is optional and enables the chart render checks.

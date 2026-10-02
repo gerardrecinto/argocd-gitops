@@ -1,0 +1,74 @@
+# Dev: follows envs/dev.yaml automatically, with prune and self-heal.
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: services-dev
+  namespace: argocd
+spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
+  generators:
+    # envs/dev.yaml says which release this environment runs.
+    # releases/<release>.yaml lists the services and their pinned image tags.
+    # One Application is generated per service in that release.
+    - matrix:
+        generators:
+          - git:
+              repoURL: https://github.com/gerardrecinto/argocd-gitops
+              revision: main
+              files:
+                - path: envs/dev.yaml
+          - git:
+              repoURL: https://github.com/gerardrecinto/argocd-gitops
+              revision: main
+              files:
+                - path: 'releases/{{.release}}.yaml'
+  template:
+    metadata:
+      name: '{{.name}}-dev'
+      finalizers:
+        - resources-finalizer.argocd.argoproj.io
+      labels:
+        team: '{{.group}}'
+        env: 'dev'
+        release: '{{.release}}'
+    spec:
+      project: '{{.group}}'
+      source:
+        repoURL: https://github.com/gerardrecinto/argocd-gitops
+        targetRevision: main
+        path: charts/service
+        helm:
+          releaseName: '{{.name}}'
+          parameters:
+            - name: name
+              value: '{{.name}}'
+              forceString: true
+            - name: env
+              value: 'dev'
+              forceString: true
+            - name: image.repository
+              value: '{{.image}}'
+              forceString: true
+            - name: image.tag
+              value: '{{.tag}}'
+              forceString: true
+            - name: port
+              value: '{{.port}}'
+            - name: replicas
+              value: '{{.replicas}}'
+      destination:
+        name: '{{.cluster}}'
+        namespace: '{{.group}}-dev'
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true
+        retry:
+          limit: 3
+          backoff:
+            duration: 10s
+            factor: 2
+            maxDuration: 3m

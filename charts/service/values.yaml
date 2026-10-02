@@ -1,0 +1,18 @@
+# Every value below is set per service by the ApplicationSets. Defaults are
+# safe placeholders so `helm template` works on its own.
+name: service
+env: dev
+replicas: 1
+port: 8080
+healthPath: /health
+
+image:
+  repository: ghcr.io/example/service
+  tag: sha-0000000000000000000000000000000000000000
+
+resources:
+  requests:
+    cpu: 25m
+    memory: 48Mi
+  limits:
+    memory: 128Mi
