@@ -1,0 +1,46 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: frontend
+  namespace: argocd
+spec:
+  description: Frontend team services
+  # Only this repo is approved as a source. Images are not sources, so which
+  # images run is decided by releases/*.yaml and reviewed here.
+  sourceRepos:
+    - https://github.com/gerardrecinto/argocd-gitops
+  # One namespace per environment, on the cluster registered under that name.
+  destinations:
+    - name: dev
+      namespace: frontend-dev
+    - name: stage
+      namespace: frontend-stage
+    - name: prod
+      namespace: frontend-prod
+  clusterResourceWhitelist: []
+  # Exactly what charts/service renders, nothing else.
+  namespaceResourceWhitelist:
+    - group: apps
+      kind: Deployment
+    - group: ""
+      kind: Service
+    - group: ""
+      kind: ServiceAccount
+  orphanedResources:
+    warn: true
+  roles:
+    - name: deployer
+      description: Read everything, sync dev. Stage and prod are not theirs to sync.
+      policies:
+        - p, proj:frontend:deployer, applications, get, frontend/*, allow
+        - p, proj:frontend:deployer, applications, sync, frontend/*-dev, allow
+      groups:
+        - PLACEHOLDER_FRONTEND_DEPLOYERS
+    - name: release-manager
+      description: Read everything, sync stage and prod. This is the prod approval.
+      policies:
+        - p, proj:frontend:release-manager, applications, get, frontend/*, allow
+        - p, proj:frontend:release-manager, applications, sync, frontend/*-stage, allow
+        - p, proj:frontend:release-manager, applications, sync, frontend/*-prod, allow
+      groups:
+        - PLACEHOLDER_FRONTEND_RELEASE_MANAGERS

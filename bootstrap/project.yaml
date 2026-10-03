@@ -1,0 +1,21 @@
+# Applied once by hand, together with root.yaml. Limits the root Application to
+# the two kinds it is supposed to create, so a bad commit cannot make it manage
+# arbitrary cluster resources.
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: teams-bootstrap
+  namespace: argocd
+spec:
+  description: Root App of Apps for the team deployment model
+  sourceRepos:
+    - https://github.com/gerardrecinto/argocd-gitops
+  destinations:
+    - server: https://kubernetes.default.svc
+      namespace: argocd
+  clusterResourceWhitelist: []
+  namespaceResourceWhitelist:
+    - group: argoproj.io
+      kind: AppProject
+    - group: argoproj.io
+      kind: ApplicationSet

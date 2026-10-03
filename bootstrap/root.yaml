@@ -1,0 +1,24 @@
+# Applied once by hand. Everything under argocd/ (AppProjects and
+# ApplicationSets) is discovered from Git after that.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: teams-root
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: teams-bootstrap
+  source:
+    repoURL: https://github.com/gerardrecinto/argocd-gitops
+    targetRevision: main
+    path: argocd
+    directory:
+      recurse: true
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

@@ -1,0 +1,5 @@
+# Promotion is a reviewed change to these paths.
+/envs/ @gerardrecinto
+/releases/ @gerardrecinto
+/argocd/ @gerardrecinto
+/bootstrap/ @gerardrecinto

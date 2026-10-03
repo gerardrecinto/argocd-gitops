@@ -10,11 +10,14 @@ command -v kubeconform >/dev/null 2>&1 || { echo "kubeconform not found. See htt
 echo "==> yamllint"
 yamllint -d relaxed .
 
-echo "==> kubeconform (apps, projects)"
+echo "==> team model references and release pins"
+python3 scripts/check_refs.py
+
+echo "==> kubeconform (apps, projects, bootstrap, argocd)"
 kubeconform -strict -summary \
   -schema-location default \
   -schema-location 'https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json' \
   -kubernetes-version 1.28.0 \
-  apps projects
+  apps projects bootstrap argocd
 
 echo "==> all checks passed"

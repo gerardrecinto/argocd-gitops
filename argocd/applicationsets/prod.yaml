@@ -1,0 +1,67 @@
+# Prod: no automated sync. A reviewed PR to envs/prod.yaml makes the Application OutOfSync, and a release-manager syncs it. Nothing reaches prod without that second step.
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: services-prod
+  namespace: argocd
+spec:
+  goTemplate: true
+  # Dropping a service from a release must not delete its prod workloads.
+  syncPolicy:
+    preserveResourcesOnDeletion: true
+  goTemplateOptions: ["missingkey=error"]
+  generators:
+    # envs/prod.yaml says which release this environment runs.
+    # releases/<release>.yaml lists the services and their pinned image tags.
+    # One Application is generated per service in that release.
+    - matrix:
+        generators:
+          - git:
+              repoURL: https://github.com/gerardrecinto/argocd-gitops
+              revision: main
+              files:
+                - path: envs/prod.yaml
+          - git:
+              repoURL: https://github.com/gerardrecinto/argocd-gitops
+              revision: main
+              files:
+                - path: 'releases/{{.release}}.yaml'
+  template:
+    metadata:
+      name: '{{.name}}-prod'
+      labels:
+        team: '{{.group}}'
+        env: 'prod'
+        release: '{{.release}}'
+    spec:
+      project: '{{.group}}'
+      source:
+        repoURL: https://github.com/gerardrecinto/argocd-gitops
+        targetRevision: main
+        path: charts/service
+        helm:
+          releaseName: '{{.name}}'
+          parameters:
+            - name: name
+              value: '{{.name}}'
+              forceString: true
+            - name: env
+              value: 'prod'
+              forceString: true
+            - name: image.repository
+              value: '{{.image}}'
+              forceString: true
+            - name: image.tag
+              value: '{{.tag}}'
+              forceString: true
+            - name: port
+              value: '{{.port}}'
+            - name: replicas
+              value: '{{.replicas}}'
+      destination:
+        name: '{{.cluster}}'
+        namespace: '{{.group}}-prod'
+      syncPolicy:
+        syncOptions:
+          - CreateNamespace=true
+          - PruneLast=true
