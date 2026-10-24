@@ -1,0 +1,269 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>argocd-gitops: releases that cannot drift</title>
+<meta name="description" content="Edit the real Argo CD team model files in your browser and run the repo's own checker: it catches latest tags, unknown teams, missing releases and auto-synced prod.">
+<meta property="og:title" content="argocd-gitops">
+<meta property="og:description" content="Edit the real Argo CD team model files in your browser and run the repo's own checker: it catches latest tags, unknown teams, missing releases and auto-synced prod.">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%238b5cf6'/%3E%3Ccircle cx='16' cy='16' r='6' fill='none' stroke='%23fff' stroke-width='3'/%3E%3C/svg%3E">
+<style>
+
+:root{--bg:#f8fafc;--panel:#fff;--panel2:#f1f5f9;--line:#e2e8f0;--fg:#0f172a;--mute:#475569;--brand:#6d28d9;--brand-bg:#ede9fe;--ok:#047857;--ok-bg:#d1fae5;--err:#b91c1c;--err-bg:#fee2e2;--code:#0b1220;--code-fg:#e2e8f0}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#070d1a;--panel:#0d1526;--panel2:#111c33;--line:#1e2b47;--fg:#e8eefc;--mute:#9fb0cc;--brand:#a78bfa;--brand-bg:#2a1659;--ok:#34d399;--ok-bg:#06382b;--err:#fca5a5;--err-bg:#3b1212}}
+:root[data-theme=dark]{--bg:#070d1a;--panel:#0d1526;--panel2:#111c33;--line:#1e2b47;--fg:#e8eefc;--mute:#9fb0cc;--brand:#a78bfa;--brand-bg:#2a1659;--ok:#34d399;--ok-bg:#06382b;--err:#fca5a5;--err-bg:#3b1212}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:var(--brand)}
+code,pre,textarea,.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+.wrap{max-width:1080px;margin:0 auto;padding:0 16px}
+nav{position:sticky;top:0;z-index:5;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+nav .wrap{display:flex;align-items:center;justify-content:space-between;height:56px;gap:12px}
+.logo{display:flex;align-items:center;gap:10px;font-weight:700;color:var(--fg);text-decoration:none}
+.logo i{width:22px;height:22px;border-radius:6px;background:#8b5cf6;display:inline-block}
+nav .links{display:flex;gap:18px;align-items:center;font-size:14px}
+nav .links a{color:var(--mute);text-decoration:none}
+nav .links a:hover{color:var(--fg)}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:10px 18px;border-radius:10px;font-weight:600;text-decoration:none;border:1px solid var(--line);color:var(--fg);background:var(--panel);cursor:pointer;font-size:15px}
+.btn.primary{background:#8b5cf6;border-color:#8b5cf6;color:#1a0b3d}
+.btn.primary:hover{background:#a78bfa}
+.btn:focus-visible,textarea:focus-visible,button:focus-visible,a:focus-visible{outline:2px solid #8b5cf6;outline-offset:2px}
+.hero{padding:72px 0 40px;text-align:center}
+.pill{display:inline-block;font-size:13px;color:var(--brand);background:var(--brand-bg);padding:4px 12px;border-radius:99px;margin-bottom:20px;font-weight:600}
+h1{font-size:clamp(34px,6vw,58px);line-height:1.08;margin:0 0 18px;letter-spacing:-.02em}
+h1 em{font-style:normal;color:var(--brand)}
+.lede{max-width:700px;margin:0 auto 28px;color:var(--mute);font-size:18px}
+.cta{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.stats{display:flex;gap:28px;justify-content:center;flex-wrap:wrap;margin-top:36px;color:var(--mute);font-size:14px}
+.stats b{display:block;color:var(--fg);font-size:22px}
+section{padding:56px 0}
+h2{font-size:clamp(26px,4vw,36px);margin:0 0 8px;letter-spacing:-.01em}
+.sub{color:var(--mute);margin:0 0 28px;max-width:720px}
+.lab{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px}
+@media (max-width:860px){.lab{grid-template-columns:minmax(0,1fr)}nav .links .hide-s{display:none}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden;min-width:0}
+.card h3{margin:0;padding:12px 16px;font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--mute);border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.tools{display:flex;gap:6px;flex-wrap:wrap}
+.chip{font:600 12px system-ui;padding:5px 10px;border-radius:8px;border:1px solid var(--line);background:var(--panel2);color:var(--fg);cursor:pointer;text-transform:none;letter-spacing:0}
+.chip[aria-pressed=true]{background:var(--brand-bg);border-color:var(--brand);color:var(--brand)}
+#log{display:block;width:100%;height:420px;border:0;padding:12px 14px;font-size:12.5px;line-height:1.55;background:var(--code);color:var(--code-fg);resize:vertical;white-space:pre;overflow:auto}
+.src{display:flex;gap:8px;align-items:center;padding:10px 14px;border-top:1px solid var(--line);font-size:13px;color:var(--mute);flex-wrap:wrap}
+.out{min-height:420px}
+.status{padding:16px;color:var(--mute);font-size:14px}
+.verdict{padding:18px 16px;border-bottom:1px solid var(--line);background:var(--err-bg)}
+.verdict.unknown{background:var(--panel2)}
+.verdict b{display:block;font-size:20px;text-transform:uppercase;letter-spacing:.04em;color:var(--err)}
+.verdict.unknown b{color:var(--mute)}
+.verdict span{font-size:14px;color:var(--mute)}
+.sec{padding:14px 16px;border-bottom:1px solid var(--line)}
+.sec:last-child{border-bottom:0}
+.sec h4{margin:0 0 8px;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--mute)}
+.bar{height:10px;border-radius:99px;background:var(--panel2);overflow:hidden;max-width:260px;display:inline-block;vertical-align:middle;margin-right:10px;width:60%}
+.bar i{display:block;height:100%;background:#8b5cf6}
+.site{padding:8px 0;border-bottom:1px dashed var(--line);font-size:13.5px}
+.site:last-child{border:0}
+.site code{background:var(--panel2);padding:1px 6px;border-radius:5px;font-size:12px}
+.fix{background:var(--ok-bg);color:var(--ok);padding:10px 12px;border-radius:8px;font-size:14px}
+.note{font-size:13px;color:var(--mute);margin-top:12px}
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+@media (max-width:860px){.steps{grid-template-columns:minmax(0,1fr)}}
+.step{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px}
+.step .n{width:28px;height:28px;border-radius:8px;background:var(--brand-bg);color:var(--brand);display:grid;place-items:center;font-weight:700;margin-bottom:10px}
+.step h3{margin:0 0 6px;font-size:17px}
+.step p{margin:0;color:var(--mute);font-size:15px}
+.tw{background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow-x:auto;max-width:100%}
+table{width:100%;min-width:560px;border-collapse:collapse;font-size:14px}
+th,td{text-align:left;padding:12px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--mute);background:var(--panel2)}
+tr:last-child td{border-bottom:0}
+td:first-child{font-family:ui-monospace,monospace;font-weight:700;white-space:nowrap}
+.install pre{background:var(--code);color:var(--code-fg);padding:16px;border-radius:12px;overflow-x:auto;font-size:13.5px;margin:0 0 12px}
+.cols2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px}
+@media (max-width:860px){.cols2{grid-template-columns:minmax(0,1fr)}}
+.limits{background:var(--panel);border:1px solid var(--line);border-left:4px solid #f59e0b;border-radius:10px;padding:16px 20px}
+.limits ul{margin:8px 0 0;padding-left:20px;color:var(--mute)}
+footer{border-top:1px solid var(--line);padding:32px 0;color:var(--mute);font-size:14px}
+footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+
+.tabs{display:flex;gap:6px;flex-wrap:wrap;padding:10px 14px;border-bottom:1px solid var(--line)}
+#ed{display:block;width:100%;height:300px;border:0;padding:12px 14px;font-size:12.5px;line-height:1.55;background:var(--code);color:var(--code-fg);resize:vertical;white-space:pre;overflow:auto;font-family:ui-monospace,monospace}
+.ctrl{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:12px 14px;border-top:1px solid var(--line)}
+.res{padding:16px}
+.res.ok{background:var(--ok-bg)} .res.bad{background:var(--err-bg)}
+.res b{display:block;font-size:18px;text-transform:uppercase;letter-spacing:.04em}
+.res.ok b{color:var(--ok)} .res.bad b{color:var(--err)}
+.fl{padding:10px 16px;border-bottom:1px solid var(--line);font:13px/1.5 ui-monospace,monospace;overflow-wrap:anywhere}
+.fl:last-child{border:0}
+.fl i{font:700 11px ui-monospace,monospace;font-style:normal;padding:2px 7px;border-radius:6px;background:var(--err-bg);color:var(--err);margin-right:8px}
+.dot{color:var(--brand)}
+.mod{display:inline-block;font:700 11px ui-monospace,monospace;padding:2px 8px;border-radius:6px;background:var(--brand-bg);color:var(--brand);margin-left:6px}
+pre.t{margin:0;padding:12px 16px;background:var(--code);color:var(--code-fg);font-size:12.5px;overflow-x:auto}
+</style>
+</head>
+<body>
+<nav><div class="wrap">
+  <a class="logo" href="#top"><i></i>argocd-gitops</a>
+  <div class="links"><a href="#try" class="hide-s">Try it</a><a href="#install" class="hide-s">Install</a><a class="btn" href="https://github.com/gerardrecinto/argocd-gitops">GitHub</a></div>
+</div></nav>
+
+<header class="hero" id="top"><div class="wrap">
+  <h1>A release is a <em>pinned list</em>. An environment is a pointer.</h1>
+  <p class="lede">Reference Argo CD patterns for three teams and three environments: App of Apps, ApplicationSets, AppProjects that fence each team, and a checker that fails the build on a floating tag or an auto-synced prod.</p>
+  <div class="cta"><a class="btn primary" href="#try">Break a release</a><a class="btn" href="#install">Use the patterns</a></div>
+  <div class="stats"><div><b>3</b>teams, 3 environments</div><div><b>1</b>hardened Helm chart for every service</div><div><b>0</b>clusters touched here</div></div>
+</div></header>
+
+
+<section id="try"><div class="wrap">
+  <h2>Break a release and watch the check catch it</h2>
+  <p class="sub">The repo ships <code>scripts/check_refs.py</code>, which runs in CI to verify the team deployment model. It runs here unchanged against the repo's real files in an in-memory copy. Edit anything, or use a preset that makes a classic mistake, then run the check. Nothing is saved or sent.</p>
+  <div class="lab">
+    <div class="card">
+      <h3><span>Repo files <span class="mod">in-memory copy</span></span><span class="tools"><button class="chip" id="reset">Reset all</button></span></h3>
+      <div class="tabs" id="tabs" role="group" aria-label="Files"></div>
+      <label class="sr" for="ed">File contents</label>
+      <textarea id="ed" spellcheck="false" wrap="off"></textarea>
+      <div class="ctrl"><span class="note" style="margin:0">Presets:</span>
+        <button class="chip" data-pre="latest">Pin :latest</button>
+        <button class="chip" data-pre="prodauto">Auto-sync prod</button>
+        <button class="chip" data-pre="missing">Point dev at a missing release</button>
+        <button class="chip" data-pre="group">Unknown team</button>
+      </div>
+      <div class="ctrl"><button class="btn primary" id="run" type="button">Run check_refs.py</button></div>
+    </div>
+    <div class="card" id="out" aria-live="polite">
+      <h3><span>Result</span></h3>
+      <div class="status" id="boot">Loading Python and PyYAML (about 10 MB the first time, cached after)...</div>
+    </div>
+  </div>
+  <p class="note">The script also renders the Helm chart when <code>helm</code> is installed. There is no helm in the browser, so that step is skipped here, exactly as it is on a machine without helm.</p>
+</div></section>
+
+<section><div class="wrap">
+  <h2>The team deployment model</h2>
+  <p class="sub">Three teams ship through three environments from one repo. A release is a pinned list of image tags, and an environment is a pointer to a release.</p>
+  <div class="tw"><table><thead><tr><th>Env</th><th>Sync</th><th>How a change lands</th></tr></thead><tbody>
+    <tr><td>dev</td><td>automated, prune, self-heal</td><td>Merge a change to <code>envs/dev.yaml</code></td></tr>
+    <tr><td>stage</td><td>automated, prune, self-heal</td><td>Reviewed PR to <code>envs/stage.yaml</code>, CODEOWNERS is the gate</td></tr>
+    <tr><td>prod</td><td>manual</td><td>Reviewed PR to <code>envs/prod.yaml</code>, then a release manager syncs</td></tr>
+  </tbody></table></div>
+  <div class="steps" style="margin-top:16px">
+    <div class="step"><div class="n">1</div><h3>Releases are immutable</h3><p>Tags must be <code>sha-&lt;40 hex&gt;</code> or <code>vX.Y.Z</code>, never <code>latest</code>. To change what runs, add a new release file and point an env at it.</p></div>
+    <div class="step"><div class="n">2</div><h3>Projects fence each team</h3><p>Each AppProject allows only its own repo and per-env namespaces, and no cluster-scoped resources. Roles split deploying to dev from releasing to stage and prod.</p></div>
+    <div class="step"><div class="n">3</div><h3>One hardened chart</h3><p>Every service renders from the same Helm chart, so a security fix lands once for all of them.</p></div>
+  </div>
+</div></section>
+
+<section id="install" class="install"><div class="wrap">
+  <h2>Use the patterns</h2>
+  <p class="sub">All cluster names, registries and hostnames in the repo are <code>PLACEHOLDER_*</code> values. Swap in your own before applying anything.</p>
+  <div class="cols2">
+    <div>
+<pre>argocd cluster add &lt;dev-context&gt;   --name dev
+argocd cluster add &lt;stage-context&gt; --name stage
+argocd cluster add &lt;prod-context&gt;  --name prod
+argocd proj create -f bootstrap/project.yaml
+argocd app create -f bootstrap/root.yaml</pre>
+    </div>
+    <div>
+<pre>pip install pyyaml
+python3 scripts/check_refs.py
+argocd app list -l team=backend</pre>
+      <p class="note">The platform and frontend releases use synthetic example tags. <code>items-api</code> is the real image from <a href="https://github.com/gerardrecinto/gitops-aks-demo">gitops-aks-demo</a>.</p>
+    </div>
+  </div>
+</div></section>
+
+<section><div class="wrap">
+  <div class="limits">
+    <strong>What this does not do</strong>
+    <ul>
+      <li>It is a set of reference patterns, not a live cluster. Nothing here syncs to a real control plane.</li>
+      <li>The check validates structure and pins. It does not prove a release is safe to run.</li>
+      <li>This page runs the checker on an in-memory copy of the files. It never talks to Argo CD or Kubernetes.</li>
+    </ul>
+  </div>
+</div></section>
+
+
+<footer><div class="wrap">
+  <span>argocd-gitops. MIT licensed. Built by <a href="https://github.com/gerardrecinto">Gerard Recinto</a>.</span>
+  <span><a href="https://github.com/gerardrecinto/argocd-gitops">Source</a> &middot; <a href="https://github.com/gerardrecinto/argocd-gitops/releases">Releases</a></span>
+</div></footer>
+<script src="https://cdn.jsdelivr.net/pyodide/v0.26.4/full/pyodide.js"></script>
+<script>
+
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s == null ? "" : s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const track = (n) => { try { if (window.plausible) window.plausible(n); } catch (e) {} };
+  let py = null, orig = {}, files = {}, cur = null;
+  const EDIT = ["envs/dev.yaml", "envs/stage.yaml", "envs/prod.yaml", "releases/2026-10-02.1.yaml", "releases/2026-09-30.1.yaml", "argocd/applicationsets/prod.yaml", "argocd/projects/backend.yaml"];
+  function tabs() { $("tabs").innerHTML = EDIT.map((f) => `<button class="chip" data-f="${f}" aria-pressed="${f === cur}">${f.split("/").slice(-2).join("/")}${files[f] !== orig[f] ? " *" : ""}</button>`).join(""); }
+  function open(f) { cur = f; $("ed").value = files[f]; tabs(); }
+  $("tabs").addEventListener("click", (e) => { const b = e.target.closest("[data-f]"); if (b) open(b.dataset.f); });
+  $("ed").addEventListener("input", () => { files[cur] = $("ed").value; tabs(); });
+  $("reset").addEventListener("click", () => { files = { ...orig }; open(cur); show(null); });
+  const PRE = {
+    latest: () => { files["releases/2026-10-02.1.yaml"] = files["releases/2026-10-02.1.yaml"].replace(/tag: sha-[0-9a-f]{40}/, "tag: latest"); open("releases/2026-10-02.1.yaml"); },
+    prodauto: () => { files["argocd/applicationsets/prod.yaml"] = files["argocd/applicationsets/prod.yaml"].replace(/(syncPolicy:\s*\n)(\s+)(syncOptions:)/, "$1$2automated: {prune: true, selfHeal: true}\n$2$3"); open("argocd/applicationsets/prod.yaml"); },
+    missing: () => { files["envs/dev.yaml"] = files["envs/dev.yaml"].replace(/release: .*/, "release: 2099-01-01.1"); open("envs/dev.yaml"); },
+    group: () => { files["releases/2026-10-02.1.yaml"] = files["releases/2026-10-02.1.yaml"].replace(/group: frontend/, "group: marketing"); open("releases/2026-10-02.1.yaml"); },
+  };
+  document.querySelectorAll("[data-pre]").forEach((b) => b.addEventListener("click", () => { PRE[b.dataset.pre](); run(); track("ag_preset_" + b.dataset.pre); }));
+
+  const PY = `
+import sys, io, json, runpy, contextlib
+def check(files_json):
+    fs = json.loads(files_json)
+    import os
+    for p, t in fs.items():
+        fp = "/repo/" + p
+        os.makedirs(os.path.dirname(fp), exist_ok=True)
+        open(fp, "w").write(t)
+    out, err = io.StringIO(), io.StringIO()
+    code = 0
+    with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+        try:
+            runpy.run_path("/repo/scripts/check_refs.py", run_name="__main__")
+        except SystemExit as e:
+            code = e.code if isinstance(e.code, int) else 1
+        except Exception as e:
+            code = 2; err.write("script error: " + type(e).__name__ + ": " + str(e).split("\\n")[0])
+    return json.dumps({"code": code, "out": out.getvalue(), "err": err.getvalue()})
+`;
+  function show(r) {
+    const el = $("out"); const head = "<h3><span>Result</span></h3>";
+    if (!r) { el.innerHTML = head + '<div class="status">Run the check.</div>'; return; }
+    if (r.code === 0) { el.innerHTML = head + `<div class="res ok"><b>Passed</b>${esc(r.out.trim())}</div><div class="status">Exit code 0. CI would let this merge.</div>`; return; }
+    const lines = (r.err || "").trim().split("\n").filter(Boolean);
+    el.innerHTML = head + `<div class="res bad"><b>Failed, exit ${r.code}</b>${lines.length} problem${lines.length === 1 ? "" : "s"}. CI would block this merge.</div>` + lines.map((l) => `<div class="fl"><i>${l.startsWith("FAIL") ? "FAIL" : "ERR"}</i>${esc(l.replace(/^FAIL /, ""))}</div>`).join("");
+  }
+  function run() {
+    if (!py) return;
+    py.globals.set("_f", JSON.stringify(files));
+    let r; try { r = JSON.parse(py.runPython("check(_f)")); } catch (e) { r = { code: 2, out: "", err: String(e.message || e).split("\n").pop() }; }
+    show(r); track("ag_run");
+  }
+  $("run").addEventListener("click", run);
+
+  (async () => {
+    try {
+      py = await loadPyodide(); await py.loadPackage("pyyaml");
+      const bundle = await (await fetch("bundle.json")).json();
+      orig = bundle; files = { ...bundle };
+      py.runPython("import os; os.makedirs('/repo/scripts', exist_ok=True)");
+      py.FS.writeFile("/repo/scripts/check_refs.py", await (await fetch("py/check_refs.py")).text());
+      py.runPython(PY);
+      open(EDIT[0]); window.__AG_READY__ = true; run();
+    } catch (e) { $("boot").textContent = "The in-browser checker did not load (" + String(e.message || e).split("\n").pop() + "). Run scripts/check_refs.py locally for the same result."; }
+  })();
+})();
+
+</script>
+</body>
+</html>
