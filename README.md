@@ -29,7 +29,7 @@ apps/
 │   └── preview-envs.yaml      Pull request generator: ephemeral preview envs per open PR
 ├── infra/
 │   ├── cert-manager.yaml
-│   ├── ingress-nginx.yaml
+│   ├── traefik.yaml
 │   ├── metallb.yaml
 │   └── monitoring.yaml
 └── services/
@@ -142,7 +142,7 @@ argocd app create root \
 
 ### ApplicationSet: Cluster Addons
 
-Deploys cert-manager, ingress-nginx, MetalLB, and monitoring to every cluster registered in ArgoCD. Adding a cluster automatically provisions all addons without any manual Application creation.
+Deploys cert-manager, Traefik, MetalLB, and monitoring to every cluster registered in ArgoCD. Adding a cluster automatically provisions all addons without any manual Application creation.
 
 See [apps/applicationsets/cluster-addons.yaml](apps/applicationsets/cluster-addons.yaml).
 

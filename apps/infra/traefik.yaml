@@ -1,29 +1,30 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: ingress-nginx
+  name: traefik
   namespace: argocd
   annotations:
     argocd.argoproj.io/sync-wave: "-2"
 spec:
   project: infra
   source:
-    repoURL: https://kubernetes.github.io/ingress-nginx
-    chart: ingress-nginx
-    targetRevision: 4.10.1
+    repoURL: https://traefik.github.io/charts
+    chart: traefik
+    targetRevision: 42.3.0
     helm:
       values: |
-        controller:
-          replicaCount: 2
-          service:
-            type: LoadBalancer
+        deployment:
+          replicas: 2
+        service:
+          spec:
             loadBalancerIP: PLACEHOLDER_INGRESS_IP
-          config:
-            use-forwarded-headers: "true"
-            compute-full-forwarded-for: "true"
+            externalTrafficPolicy: Local
+        ingressClass:
+          enabled: true
+          isDefaultClass: true
   destination:
     server: https://kubernetes.default.svc
-    namespace: ingress-nginx
+    namespace: traefik
   syncPolicy:
     automated:
       prune: true

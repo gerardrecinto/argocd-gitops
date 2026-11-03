@@ -21,7 +21,7 @@ spec:
             passwordKey: admin-password
           ingress:
             enabled: true
-            ingressClassName: nginx
+            ingressClassName: traefik
             hosts:
               - grafana.PLACEHOLDER_DOMAIN
         prometheus:
